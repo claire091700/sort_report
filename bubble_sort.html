@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>氣泡排序示範</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f7fc;
+      color: #2c3e50;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 900px;
+      margin: 24px auto;
+      padding: 20px;
+      background: #ffffff;
+      border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(44, 62, 80, 0.08);
+    }
+    h1, h2, h3 {
+      margin-top: 0;
+    }
+    .controls {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+    .controls input[type="number"] {
+      width: 100px;
+      padding: 8px;
+      border: 1px solid #cfd8dc;
+      border-radius: 8px;
+    }
+    .controls button {
+      padding: 10px 16px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      background: #2e86de;
+      color: white;
+      transition: background 0.2s ease;
+    }
+    .controls button:hover {
+      background: #1f5dac;
+    }
+    #arrayDisplay {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 18px;
+    }
+    .bar {
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      width: 40px;
+      min-height: 40px;
+      border-radius: 8px;
+      background: #d6eaf8;
+      color: #1b4f72;
+      font-weight: 600;
+      position: relative;
+    }
+    .bar.active {
+      background: #ffca28;
+    }
+    .bar.swapped {
+      background: #58d68d;
+    }
+    .bar::after {
+      content: attr(data-value);
+      position: absolute;
+      top: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 0.9rem;
+    }
+    #steps {
+      white-space: pre-wrap;
+      background: #f1f4f9;
+      padding: 16px;
+      border-radius: 10px;
+      border: 1px solid #dfe6ed;
+      min-height: 150px;
+      margin-bottom: 20px;
+    }
+    .info-box {
+      background: #fafafa;
+      padding: 16px;
+      border-radius: 10px;
+      border: 1px solid #e2e8f0;
+    }
+    .info-box strong {
+      color: #2c3e50;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>氣泡排序 Bubble Sort</h1>
+    <p>這個示範說明氣泡排序的步驟、交換過程與時間複雜度。</p>
+
+    <div class="controls">
+      <label>
+        陣列長度:
+        <input id="sizeInput" type="number" min="5" max="12" value="8" />
+      </label>
+      <button id="generateButton">重新產生陣列</button>
+      <button id="startButton">開始排序</button>
+      <button id="stepButton">下一步</button>
+      <button id="resetButton">重設</button>
+    </div>
+
+    <div id="arrayDisplay"></div>
+
+    <div class="info-box">
+      <h2>時間複雜度</h2>
+      <p>氣泡排序的複雜度如下：</p>
+      <ul>
+        <li><strong>最壞情況</strong>: O(n²)</li>
+        <li><strong>平均情況</strong>: O(n²)</li>
+        <li><strong>最佳情況</strong>: O(n)</li>
+      </ul>
+      <p>如果資料已經幾乎排序完畢，最佳情況下只需做一次完整的掃描。</p>
+    </div>
+
+    <h2>排序步驟與過程</h2>
+    <div id="steps">請按「開始排序」或「下一步」來觀看演示。</div>
+  </div>
+
+  <script>
+    const arrayDisplay = document.getElementById('arrayDisplay');
+    const steps = document.getElementById('steps');
+    const sizeInput = document.getElementById('sizeInput');
+    const generateButton = document.getElementById('generateButton');
+    const startButton = document.getElementById('startButton');
+    const stepButton = document.getElementById('stepButton');
+    const resetButton = document.getElementById('resetButton');
+
+    let items = [];
+    let i = 0;
+    let j = 0;
+    let sorted = false;
+    let running = false;
+    let stepMode = false;
+
+    function createRandomArray(size) {
+      const arr = [];
+      for (let k = 0; k < size; k++) {
+        arr.push(Math.floor(Math.random() * 90) + 10);
+      }
+      return arr;
+    }
+
+    function renderArray(activePair = []) {
+      arrayDisplay.innerHTML = '';
+      items.forEach((value, index) => {
+        const bar = document.createElement('div');
+        bar.className = 'bar';
+        bar.dataset.value = value;
+        if (activePair.includes(index)) {
+          bar.classList.add('active');
+        }
+        if (index >= items.length - (items.length - i)) {
+          bar.style.opacity = '0.65';
+        }
+        bar.style.height = `${value * 1.5}px`;
+        arrayDisplay.appendChild(bar);
+      });
+    }
+
+    function resetState() {
+      i = 0;
+      j = 0;
+      sorted = false;
+      running = false;
+      stepMode = false;
+      steps.textContent = '請按「開始排序」或「下一步」來觀看演示。';
+      renderArray();
+    }
+
+    function logStep(message) {
+      steps.textContent += '\n' + message;
+      steps.scrollTop = steps.scrollHeight;
+    }
+
+    function bubbleStep() {
+      if (sorted) {
+        logStep('排序已完成。');
+        return;
+      }
+
+      if (i >= items.length - 1) {
+        sorted = true;
+        renderArray();
+        logStep('所有迴圈完成，陣列已排序。');
+        return;
+      }
+
+      if (j >= items.length - i - 1) {
+        logStep(`第 ${i + 1} 輪結束。最大值已「泡」到正確位置。`);
+        j = 0;
+        i += 1;
+        renderArray();
+        return;
+      }
+
+      renderArray([j, j + 1]);
+      const a = items[j];
+      const b = items[j + 1];
+
+      if (a > b) {
+        items[j] = b;
+        items[j + 1] = a;
+        logStep(`比較 index ${j} (${a}) 與 index ${j + 1} (${b})：交換。`);
+      } else {
+        logStep(`比較 index ${j} (${a}) 與 index ${j + 1} (${b})：不交換。`);
+      }
+
+      j += 1;
+      if (!stepMode) {
+        setTimeout(() => {
+          bubbleStep();
+        }, 600);
+      }
+    }
+
+    function startSort() {
+      if (running || sorted) return;
+      running = true;
+      stepMode = false;
+      steps.textContent = '排序開始。';
+      bubbleStep();
+    }
+
+    function nextStep() {
+      if (sorted) return;
+      if (!running) {
+        running = true;
+        stepMode = true;
+        steps.textContent = '手動單步排序開始。';
+      }
+      bubbleStep();
+    }
+
+    generateButton.addEventListener('click', () => {
+      items = createRandomArray(Number(sizeInput.value));
+      resetState();
+    });
+
+    startButton.addEventListener('click', startSort);
+    stepButton.addEventListener('click', nextStep);
+    resetButton.addEventListener('click', () => {
+      items = [...items];
+      resetState();
+    });
+
+    items = createRandomArray(Number(sizeInput.value));
+    renderArray();
+  </script>
+</body>
+</html>
