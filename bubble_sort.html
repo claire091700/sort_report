@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>氣泡排序示範</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f7fc;
+      color: #2c3e50;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 900px;
+      margin: 24px auto;
+      padding: 20px;
+      background: #ffffff;
+      border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(44, 62, 80, 0.08);
+    }
+    h1, h2, h3 {
+      margin-top: 0;
+    }
+    .controls {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+    .controls input[type="number"] {
+      width: 100px;
+      padding: 8px;
+      border: 1px solid #cfd8dc;
+      border-radius: 8px;
+    }
+    .controls button {
+      padding: 10px 16px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      background: #2e86de;
+      color: white;
+      transition: background 0.2s ease;
+    }
+    .controls button:hover:not(:disabled) {
+      background: #1f5dac;
+    }
+    .controls button:disabled {
+      background: #a4b0be;
+      cursor: not-allowed;
+    }
+    #arrayDisplay {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 18px;
+      min-height: 150px;
+      align-items: flex-end;
+    }
+    .bar {
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      width: 40px;
+      min-height: 40px;
+      border-radius: 8px;
+      background: #d6eaf8;
+      color: #1b4f72;
+      font-weight: 600;
+      position: relative;
+      transition: height 0.35s ease, background 0.25s ease, opacity 0.25s ease;
+    }
+    .bar.sorted {
+      opacity: 0.6;
+      background: #bdc3c7;
+    }
+    .bar.active {
+      animation: highlight 0.45s ease;
+      background: #ffca28;
+    }
+    .bar.swapped {
+      animation: swapPulse 0.45s ease;
+      background: #58d68d;
+    }
+    .bar::after {
+      content: attr(data-value);
+      position: absolute;
+      top: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 0.9rem;
+    }
+    @keyframes highlight {
+      0% { transform: translateY(0); }
+      25% { transform: translateY(-10px); }
+      100% { transform: translateY(0); }
+    }
+    @keyframes swapPulse {
+      0% { transform: translateY(0); }
+      30% { transform: translateY(-12px); }
+      60% { transform: translateY(0); }
+      100% { transform: translateY(0); }
+    }
+    #steps {
+      white-space: pre-wrap;
+      background: #f1f4f9;
+      padding: 16px;
+      border-radius: 10px;
+      border: 1px solid #dfe6ed;
+      height: 200px;
+      overflow-y: auto;
+      margin-bottom: 20px;
+      font-family: 'Courier New', Courier, monospace;
+    }
+    .info-box {
+      background: #fafafa;
+      padding: 16px;
+      border-radius: 10px;
+      border: 1px solid #e2e8f0;
+    }
+    .info-box strong {
+      color: #2c3e50;
+    }
+    pre.pseudocode {
+      background: #282c34;
+      color: #abb2bf;
+      padding: 16px;
+      border-radius: 8px;
+      overflow-x: auto;
+      font-family: 'Courier New', Courier, monospace;
+      line-height: 1.4;
+    }
+    .mb-20 {
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>氣泡排序 Bubble Sort</h1>
+    <p>這個示範說明氣泡排序的步驟、交換過程與時間複雜度。</p>
+
+    <div class="controls">
+      <label>
+        陣列長度 (5-12):
+        <input id="sizeInput" type="number" min="5" max="12" value="8" />
+      </label>
+      <button id="generateButton">重新產生陣列</button>
+      <button id="startButton">開始排序</button>
+      <button id="stepButton">下一步</button>
+      <button id="resetButton">重設為初始狀態</button>
+    </div>
+
+    <div id="arrayDisplay"></div>
+
+    <div class="info-box mb-20">
+      <h2>操作原理</h2>
+      <p>氣泡排序（Bubble Sort）是一種簡單的排序演算法。它會重複地走訪要排序的數列，一次比較兩個相鄰的元素。如果它們的順序錯誤，就把它們交換過來。走訪數列的工作會重複地進行，直到沒有再需要交換的元素，這意味著最大（或最小）的元素會像氣泡一樣「浮」到陣列的頂端。</p>
+    </div>
+
+    <div class="info-box mb-20">
+      <h2>時間與空間複雜度</h2>
+      <ul>
+        <li><strong>時間複雜度（最壞與平均情況）</strong>: O(n²) - 陣列為反序或隨機排列時。</li>
+        <li><strong>時間複雜度（最佳情況）</strong>: O(n) - 加入「提早結束」機制後，當資料已經是排序好的狀態，只需要做一次完整的掃描即可結束。</li>
+        <li><strong>空間複雜度</strong>: O(1) - 只需要使用常數級的額外空間來暫存交換的變數，屬於原地排序演算法（In-place sorting）。</li>
+      </ul>
+    </div>
+
+    <div class="info-box mb-20">
+      <h2>演算法偽代碼 (Pseudocode)</h2>
+      <pre class="pseudocode"><code>function bubbleSort(A)
+    n = length(A)
+    for i from 0 to n - 1 do
+        swapped = false // 提早結束的優化標記
+        // 每一輪會把最大值推到最後面，所以內圈只要跑到 n - i - 1
+        for j from 0 to n - i - 2 do
+            if A[j] > A[j+1] then
+                swap(A[j], A[j+1])
+                swapped = true
+            end if
+        end for
+        // 如果這一輪沒有發生任何交換，代表陣列已經排序完成
+        if not swapped then
+            break
+        end if
+    end for
+end function</code></pre>
+    </div>
+
+    <h2>排序步驟與過程</h2>
+    <div id="steps">請按「開始排序」或「下一步」來觀看演示。</div>
+  </div>
+
+  <script>
+    const arrayDisplay = document.getElementById('arrayDisplay');
+    const steps = document.getElementById('steps');
+    const sizeInput = document.getElementById('sizeInput');
+    const generateButton = document.getElementById('generateButton');
+    const startButton = document.getElementById('startButton');
+    const stepButton = document.getElementById('stepButton');
+    const resetButton = document.getElementById('resetButton');
+
+    let items = [];
+    let originalItems = [];
+    let i = 0;
+    let j = 0;
+    let sorted = false;
+    let running = false;
+    let stepMode = false;
+    let timeoutId = null;
+    let swappedThisRound = false; // 新增：用於判斷是否提早結束
+
+    function getValidSize() {
+      let size = Number(sizeInput.value);
+      if (size < 5) size = 5;
+      if (size > 12) size = 12;
+      sizeInput.value = size;
+      return size;
+    }
+
+    function createRandomArray(size) {
+      const arr = [];
+      for (let k = 0; k < size; k++) {
+        arr.push(Math.floor(Math.random() * 90) + 10);
+      }
+      return arr;
+    }
+
+    function updateButtonStates() {
+      generateButton.disabled = running && !stepMode;
+      startButton.disabled = running || sorted;
+      stepButton.disabled = sorted;
+    }
+
+    function renderArray(activePair = [], swappedPair = []) {
+      arrayDisplay.innerHTML = '';
+      items.forEach((value, index) => {
+        const bar = document.createElement('div');
+        bar.className = 'bar';
+        bar.dataset.value = value;
+        
+        if (activePair.includes(index)) {
+          bar.classList.add('active');
+        }
+        if (swappedPair.includes(index)) {
+          bar.classList.add('swapped');
+        }
+        
+        // 視覺判斷：提早結束時全部設為已排序，否則依據 i 判斷
+        if (sorted || index >= items.length - i) {
+          bar.classList.add('sorted');
+        }
+        
+        bar.style.height = `${value * 1.5}px`;
+        arrayDisplay.appendChild(bar);
+      });
+    }
+
+    function resetState() {
+      i = 0;
+      j = 0;
+      sorted = false;
+      running = false;
+      stepMode = false;
+      swappedThisRound = false;
+      
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+        timeoutId = null;
+      }
+      steps.textContent = '請按「開始排序」或「下一步」來觀看演示。';
+      updateButtonStates();
+      renderArray();
+    }
+
+    function logStep(message) {
+      steps.textContent += '\n' + message;
+      steps.scrollTop = steps.scrollHeight; // 自動捲動到最底部
+    }
+
+    function bubbleStep() {
+      if (sorted) return;
+
+      // 正常的迴圈結束條件
+      if (i >= items.length - 1) {
+        sorted = true;
+        running = false;
+        renderArray();
+        logStep('所有迴圈完成，陣列已排序。');
+        updateButtonStates();
+        return;
+      }
+
+      if (j === 0) {
+        swappedThisRound = false; // 每輪開始前重設標記
+      }
+
+      // 檢查是否完成當前這一輪 (Pass)
+      if (j >= items.length - i - 1) {
+        logStep(`--- 第 ${i + 1} 輪結束 ---`);
+        
+        // 提早結束機制 (Early Termination)
+        if (!swappedThisRound) {
+          sorted = true;
+          running = false;
+          renderArray();
+          logStep('✨ 提早結束：本輪沒有發生任何交換，陣列已經排序完成！');
+          updateButtonStates();
+          return;
+        }
+
+        j = 0;
+        i += 1;
+        renderArray();
+        
+        if (!stepMode) {
+          timeoutId = setTimeout(() => {
+            bubbleStep();
+          }, 600);
+        }
+        return;
+      }
+
+      const a = items[j];
+      const b = items[j + 1];
+
+      if (a > b) {
+        items[j] = b;
+        items[j + 1] = a;
+        swappedThisRound = true; // 發生交換，標記設為 true
+        renderArray([], [j, j + 1]);
+        logStep(`比較 [${j}] 與 [${j + 1}]：${a} > ${b}，進行交換。`);
+      } else {
+        renderArray([j, j + 1]);
+        logStep(`比較 [${j}] 與 [${j + 1}]：${a} <= ${b}，不需交換。`);
+      }
+
+      j += 1;
+      
+      if (!stepMode) {
+        timeoutId = setTimeout(() => {
+          bubbleStep();
+        }, 600);
+      }
+      updateButtonStates();
+    }
+
+    function startSort() {
+      if (running || sorted) return;
+      running = true;
+      stepMode = false;
+      steps.textContent = '排序開始。';
+      updateButtonStates();
+      bubbleStep();
+    }
+
+    function nextStep() {
+      if (sorted) return;
+      
+      // 清除自動播放的計時器，強制轉為單步模式
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+        timeoutId = null;
+      }
+      
+      running = true;
+      stepMode = true; 
+      
+      if (steps.textContent === '請按「開始排序」或「下一步」來觀看演示。') {
+        steps.textContent = '手動單步排序開始。';
+      }
+      
+      updateButtonStates();
+      bubbleStep();
+    }
+
+    // 事件綁定
+    generateButton.addEventListener('click', () => {
+      items = createRandomArray(getValidSize());
+      originalItems = [...items];
+      resetState();
+    });
+
+    startButton.addEventListener('click', startSort);
+    stepButton.addEventListener('click', nextStep);
+    
+    resetButton.addEventListener('click', () => {
+      items = [...originalItems];
+      resetState();
+      logStep('已重設為初始未排序狀態。');
+    });
+
+    // 初始載入
+    items = createRandomArray(getValidSize());
+    originalItems = [...items];
+    renderArray();
+    updateButtonStates();
+  </script>
+</body>
+</html>
