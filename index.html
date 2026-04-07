@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>演算法視覺化工具</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f7fc;
+      color: #2c3e50;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+    .container {
+      max-width: 800px;
+      width: 90%;
+      padding: 40px;
+      background: #ffffff;
+      border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(44, 62, 80, 0.08);
+      text-align: center;
+    }
+    h1 {
+      margin-top: 0;
+      color: #1b4f72;
+      font-size: 2.5rem;
+    }
+    p {
+      color: #7f8c8d;
+      margin-bottom: 40px;
+      font-size: 1.1rem;
+    }
+    .menu {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+    }
+    .menu a {
+      display: block;
+      padding: 20px;
+      background: #d6eaf8;
+      color: #1b4f72;
+      text-decoration: none;
+      font-weight: bold;
+      font-size: 1.2rem;
+      border-radius: 10px;
+      transition: all 0.3s ease;
+      border: 2px solid transparent;
+    }
+    .menu a:hover {
+      background: #2e86de;
+      color: white;
+      transform: translateY(-5px);
+      box-shadow: 0 5px 15px rgba(46, 134, 222, 0.3);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>排序演算法視覺化工具</h1>
+    <p>請選擇一個演算法來觀看動態示範與原理解析：</p>
+    
+    <div class="menu">
+      <a href="bubble_sort.html">氣泡排序 (Bubble)</a>
+      <a href="selection_sort.html">選擇排序 (Selection)</a>
+      <a href="insertion_sort.html">插入排序 (Insertion)</a>
+      <a href="merge_sort.html">合併排序 (Merge)</a>
+      <a href="heap_sort.html">堆積排序 (Heap)</a>
+    </div>
+  </div>
+</body>
+</html>
