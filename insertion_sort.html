@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>插入排序示範</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f7fc;
+      color: #2c3e50;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 900px;
+      margin: 24px auto;
+      padding: 20px;
+      background: #ffffff;
+      border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(44, 62, 80, 0.08);
+    }
+    h1, h2, h3 {
+      margin-top: 0;
+    }
+    .controls {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+    .controls input[type="number"] {
+      width: 100px;
+      padding: 8px;
+      border: 1px solid #cfd8dc;
+      border-radius: 8px;
+    }
+    .controls button {
+      padding: 10px 16px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      background: #2e86de;
+      color: white;
+      transition: background 0.2s ease;
+    }
+    .controls button:hover:not(:disabled) {
+      background: #1f5dac;
+    }
+    .controls button:disabled {
+      background: #a4b0be;
+      cursor: not-allowed;
+    }
+    #arrayDisplay {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 18px;
+      min-height: 150px;
+      align-items: flex-end;
+    }
+    .bar {
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      width: 40px;
+      min-height: 40px;
+      border-radius: 8px;
+      background: #d6eaf8;
+      color: #1b4f72;
+      font-weight: 600;
+      position: relative;
+      transition: height 0.35s ease, background 0.25s ease, opacity 0.25s ease;
+    }
+    .bar.sorted {
+      opacity: 0.6;
+      background: #bdc3c7;
+    }
+    .bar.active {
+      animation: highlight 0.45s ease;
+      background: #ffca28;
+    }
+    .bar.swapped {
+      animation: swapPulse 0.45s ease;
+      background: #58d68d;
+    }
+    .bar::after {
+      content: attr(data-value);
+      position: absolute;
+      top: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 0.9rem;
+    }
+    @keyframes highlight {
+      0% { transform: translateY(0); }
+      25% { transform: translateY(-10px); }
+      100% { transform: translateY(0); }
+    }
+    @keyframes swapPulse {
+      0% { transform: translateY(0); }
+      30% { transform: translateY(-12px); }
+      60% { transform: translateY(0); }
+      100% { transform: translateY(0); }
+    }
+    #steps {
+      white-space: pre-wrap;
+      background: #f1f4f9;
+      padding: 16px;
+      border-radius: 10px;
+      border: 1px solid #dfe6ed;
+      height: 200px;
+      overflow-y: auto;
+      margin-bottom: 20px;
+      font-family: 'Courier New', Courier, monospace;
+    }
+    .info-box {
+      background: #fafafa;
+      padding: 16px;
+      border-radius: 10px;
+      border: 1px solid #e2e8f0;
+    }
+    .info-box strong {
+      color: #2c3e50;
+    }
+    pre.pseudocode {
+      background: #282c34;
+      color: #abb2bf;
+      padding: 16px;
+      border-radius: 8px;
+      overflow-x: auto;
+      font-family: 'Courier New', Courier, monospace;
+      line-height: 1.4;
+    }
+    .mb-20 {
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>插入排序 Insertion Sort</h1>
+    <p>這個示範說明插入排序尋找適當位置的步驟、推移過程與時間複雜度。</p>
+
+    <div class="controls">
+      <label>
+        陣列長度 (5-12):
+        <input id="sizeInput" type="number" min="5" max="12" value="8" />
+      </label>
+      <button id="generateButton">重新產生陣列</button>
+      <button id="startButton">開始排序</button>
+      <button id="stepButton">下一步</button>
+      <button id="resetButton">重設為初始狀態</button>
+    </div>
+
+    <div id="arrayDisplay"></div>
+
+    <div class="info-box mb-20">
+      <h2>操作原理</h2>
+      <p>插入排序（Insertion Sort）就像打撲克牌時整理手牌一樣。它會將陣列分為「已排序」與「未排序」兩部分。一開始，將陣列的第一個元素視為已排序。接著，逐一取出未排序部分的元素，在已排序的部分中由後往前掃描，找到合適的位置並「插入」。</p>
+      <p><em>*註：為了在網頁中能清楚呈現元素的移動軌跡，此處動畫以「相鄰元素不斷交換」的方式來視覺化表現向後推移的過程。</em></p>
+    </div>
+
+    <div class="info-box mb-20">
+      <h2>時間與空間複雜度</h2>
+      <ul>
+        <li><strong>時間複雜度（最壞與平均情況）</strong>: $O(n^2)$ - 陣列為反序或隨機排列時，需要大量的比較與移動。</li>
+        <li><strong>時間複雜度（最佳情況）</strong>: $O(n)$ - 陣列已經排序好時，每個元素只需與前一個元素比較一次，不需移動。</li>
+        <li><strong>空間複雜度</strong>: $O(1)$ - 原地排序（In-place sorting）。</li>
+      </ul>
+    </div>
+
+    <div class="info-box mb-20">
+      <h2>演算法偽代碼 (Pseudocode)</h2>
+      <pre class="pseudocode"><code>function insertionSort(A)
+    n = length(A)
+    for i from 1 to n - 1 do
+        key = A[i]
+        j = i - 1
+        
+        // 將大於 key 的元素向後移
+        while j >= 0 and A[j] > key do
+            A[j + 1] = A[j]
+            j = j - 1
+        end while
+        
+        // 放入適當位置
+        A[j + 1] = key
+    end for
+end function</code></pre>
+    </div>
+
+    <h2>排序步驟與過程</h2>
+    <div id="steps">請按「開始排序」或「下一步」來觀看演示。</div>
+  </div>
+
+  <script>
+    const arrayDisplay = document.getElementById('arrayDisplay');
+    const steps = document.getElementById('steps');
+    const sizeInput = document.getElementById('sizeInput');
+    const generateButton = document.getElementById('generateButton');
+    const startButton = document.getElementById('startButton');
+    const stepButton = document.getElementById('stepButton');
+    const resetButton = document.getElementById('resetButton');
+
+    let items = [];
+    let originalItems = [];
+    let i = 1; // 外層迴圈：目前要插入的元素索引 (從 1 開始)
+    let j = 1; // 內層迴圈：追蹤該元素往前移動的目前位置
+    
+    let sorted = false;
+    let running = false;
+    let stepMode = false;
+    let timeoutId = null;
+
+    function getValidSize() {
+      let size = Number(sizeInput.value);
+      if (size < 5) size = 5;
+      if (size > 12) size = 12;
+      sizeInput.value = size;
+      return size;
+    }
+
+    function createRandomArray(size) {
+      const arr = [];
+      for (let k = 0; k < size; k++) {
+        arr.push(Math.floor(Math.random() * 90) + 10);
+      }
+      return arr;
+    }
+
+    function updateButtonStates() {
+      generateButton.disabled = running && !stepMode;
+      startButton.disabled = running || sorted;
+      stepButton.disabled = sorted;
+    }
+
+    function renderArray(activePair = [], swappedPair = []) {
+      arrayDisplay.innerHTML = '';
+      items.forEach((value, index) => {
+        const bar = document.createElement('div');
+        bar.className = 'bar';
+        bar.dataset.value = value;
+        
+        // 已排序區塊：索引小於 i 視為已排序。
+        // 但如果當前正在往前移動的元素 (j) 跑到這個區塊內，我們讓它保持高亮色彩 (不加 sorted class)
+        if (sorted || (index < i && index !== j)) {
+          bar.classList.add('sorted');
+        }
+        
+        if (activePair.includes(index)) {
+          bar.classList.add('active');
+        }
+        if (swappedPair.includes(index)) {
+          bar.classList.add('swapped');
+        }
+        
+        bar.style.height = `${value * 1.5}px`;
+        arrayDisplay.appendChild(bar);
+      });
+    }
+
+    function resetState() {
+      i = 1;
+      j = 1;
+      sorted = false;
+      running = false;
+      stepMode = false;
+      
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+        timeoutId = null;
+      }
+      steps.textContent = '請按「開始排序」或「下一步」來觀看演示。';
+      updateButtonStates();
+      renderArray();
+    }
+
+    function logStep(message) {
+      steps.textContent += '\n' + message;
+      steps.scrollTop = steps.scrollHeight; 
+    }
+
+    function insertionStep() {
+      if (sorted) return;
+
+      // 如果外層迴圈跑到底，代表已完成全陣列排序
+      if (i >= items.length) {
+        sorted = true;
+        running = false;
+        renderArray();
+        logStep('所有迴圈完成，陣列已排序。');
+        updateButtonStates();
+        return;
+      }
+
+      // 開始比較與推移
+      if (j > 0 && items[j - 1] > items[j]) {
+        const a = items[j - 1];
+        const b = items[j];
+        
+        // 視覺化：使用相鄰交換來表現推移
+        items[j - 1] = b;
+        items[j] = a;
+        
+        renderArray([], [j - 1, j]);
+        logStep(`比較 [${j - 1}] 與 [${j}]：${a} > ${b}，將元素往前移。`);
+        
+        j--; // 繼續往前檢查
+      } else {
+        // 當前元素已找到適當位置
+        if (j > 0) {
+          logStep(`比較 [${j - 1}] 與 [${j}]：${items[j - 1]} <= ${items[j]}，元素放入適當位置。`);
+        } else {
+          logStep(`已到達陣列最開頭，元素放入適當位置。`);
+        }
+        
+        renderArray([j], []);
+        logStep(`--- 第 ${i} 輪完成 ---`);
+        
+        // 準備下一輪
+        i++;
+        j = i; 
+      }
+
+      if (!stepMode && !sorted) {
+        timeoutId = setTimeout(insertionStep, 600);
+      }
+      updateButtonStates();
+    }
+
+    function startSort() {
+      if (running || sorted) return;
+      running = true;
+      stepMode = false;
+      steps.textContent = '排序開始。';
+      updateButtonStates();
+      insertionStep();
+    }
+
+    function nextStep() {
+      if (sorted) return;
+      
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+        timeoutId = null;
+      }
+      
+      running = true;
+      stepMode = true; 
+      
+      if (steps.textContent === '請按「開始排序」或「下一步」來觀看演示。') {
+        steps.textContent = '手動單步排序開始。';
+      }
+      
+      updateButtonStates();
+      insertionStep();
+    }
+
+    // 事件綁定
+    generateButton.addEventListener('click', () => {
+      items = createRandomArray(getValidSize());
+      originalItems = [...items];
+      resetState();
+    });
+
+    startButton.addEventListener('click', startSort);
+    stepButton.addEventListener('click', nextStep);
+    
+    resetButton.addEventListener('click', () => {
+      items = [...originalItems];
+      resetState();
+      logStep('已重設為初始未排序狀態。');
+    });
+
+    // 初始載入
+    items = createRandomArray(getValidSize());
+    originalItems = [...items];
+    renderArray();
+    updateButtonStates();
+  </script>
+</body>
+</html>
