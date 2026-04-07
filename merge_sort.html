@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>合併排序示範</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f7fc;
+      color: #2c3e50;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 900px;
+      margin: 24px auto;
+      padding: 20px;
+      background: #ffffff;
+      border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(44, 62, 80, 0.08);
+    }
+    h1, h2, h3 {
+      margin-top: 0;
+    }
+    .controls {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+    .controls input[type="number"] {
+      width: 100px;
+      padding: 8px;
+      border: 1px solid #cfd8dc;
+      border-radius: 8px;
+    }
+    .controls button {
+      padding: 10px 16px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      background: #2e86de;
+      color: white;
+      transition: background 0.2s ease;
+    }
+    .controls button:hover:not(:disabled) {
+      background: #1f5dac;
+    }
+    .controls button:disabled {
+      background: #a4b0be;
+      cursor: not-allowed;
+    }
+    #arrayDisplay {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 18px;
+      min-height: 150px;
+      align-items: flex-end;
+    }
+    .bar {
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      width: 40px;
+      min-height: 40px;
+      border-radius: 8px;
+      background: #d6eaf8;
+      color: #1b4f72;
+      font-weight: 600;
+      position: relative;
+      transition: height 0.35s ease, background 0.25s ease, opacity 0.25s ease;
+    }
+    .bar.sorted {
+      opacity: 0.6;
+      background: #bdc3c7;
+    }
+    .bar.active {
+      animation: highlight 0.45s ease;
+      background: #ffca28;
+    }
+    .bar.swapped {
+      animation: swapPulse 0.45s ease;
+      background: #58d68d;
+    }
+    .bar::after {
+      content: attr(data-value);
+      position: absolute;
+      top: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 0.9rem;
+    }
+    @keyframes highlight {
+      0% { transform: translateY(0); }
+      25% { transform: translateY(-10px); }
+      100% { transform: translateY(0); }
+    }
+    @keyframes swapPulse {
+      0% { transform: translateY(0); }
+      30% { transform: translateY(-12px); }
+      60% { transform: translateY(0); }
+      100% { transform: translateY(0); }
+    }
+    #steps {
+      white-space: pre-wrap;
+      background: #f1f4f9;
+      padding: 16px;
+      border-radius: 10px;
+      border: 1px solid #dfe6ed;
+      height: 250px;
+      overflow-y: auto;
+      margin-bottom: 20px;
+      font-family: 'Courier New', Courier, monospace;
+      line-height: 1.5;
+    }
+    .info-box {
+      background: #fafafa;
+      padding: 16px;
+      border-radius: 10px;
+      border: 1px solid #e2e8f0;
+    }
+    .info-box strong {
+      color: #2c3e50;
+    }
+    pre.pseudocode {
+      background: #282c34;
+      color: #abb2bf;
+      padding: 16px;
+      border-radius: 8px;
+      overflow-x: auto;
+      font-family: 'Courier New', Courier, monospace;
+      line-height: 1.4;
+    }
+    .mb-20 {
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>合併排序 Merge Sort</h1>
+    <p>這個示範說明合併排序的分治過程、暫存陣列覆寫機制與時間複雜度。</p>
+
+    <div class="controls">
+      <label>
+        陣列長度 (5-12):
+        <input id="sizeInput" type="number" min="5" max="12" value="8" />
+      </label>
+      <button id="generateButton">重新產生陣列</button>
+      <button id="startButton">開始排序</button>
+      <button id="stepButton">下一步</button>
+      <button id="resetButton">重設為初始狀態</button>
+    </div>
+
+    <div id="arrayDisplay"></div>
+
+    <div class="info-box mb-20">
+      <h2>操作原理</h2>
+      <p>合併排序（Merge Sort）是一種基於<strong>分治法（Divide and Conquer）</strong>的演算法。它的核心步驟分為兩部分：</p>
+      <ol>
+        <li><strong>分割 (Divide)</strong>：將陣列不斷對半切割，直到每個子陣列只剩下一個元素（此時視為已排序狀態）。</li>
+        <li><strong>合併 (Merge)</strong>：將相鄰的兩個子陣列合併成一個有序的陣列，過程中會使用額外的暫存空間，比較左右元素的大小依序填回原陣列。</li>
+      </ol>
+      <p><em>*註：在此視覺化示範中，<span style="color:#f39c12; font-weight:bold;">黃色柱子</span>代表當前正在被覆寫更新的陣列位置，<span style="color:#7f8c8d; font-weight:bold;">灰色柱子</span>則代表剛完成局部合併的區段。</em></p>
+    </div>
+
+    <div class="info-box mb-20">
+      <h2>時間與空間複雜度</h2>
+      <ul>
+        <li><strong>時間複雜度（最佳、最壞與平均情況）</strong>: $O(n \log n)$ - 無論陣列初始狀態為何，都需要穩定地進行對半切割（$\log n$ 層）與線性合併（$n$）。</li>
+        <li><strong>空間複雜度</strong>: $O(n)$ - 合併過程需要建立額外的暫存陣列來儲存子區段的元素，不屬於原地排序演算法。</li>
+      </ul>
+    </div>
+
+    <div class="info-box mb-20">
+      <h2>演算法偽代碼 (Pseudocode)</h2>
+      <pre class="pseudocode"><code>function mergeSort(A, left, right)
+    if left >= right then
+        return
+    end if
+    
+    mid = floor((left + right) / 2)
+    mergeSort(A, left, mid)
+    mergeSort(A, mid + 1, right)
+    merge(A, left, mid, right)
+end function
+
+function merge(A, left, mid, right)
+    L = A[left ... mid]     // 建立左暫存陣列
+    R = A[mid + 1 ... right] // 建立右暫存陣列
+    i = 0, j = 0, k = left
+    
+    while i < length(L) and j < length(R) do
+        if L[i] <= R[j] then
+            A[k] = L[i]
+            i = i + 1
+        else
+            A[k] = R[j]
+            j = j + 1
+        end if
+        k = k + 1
+    end while
+    
+    // 複製剩餘未比較完的元素
+    while i < length(L) do
+        A[k] = L[i]
+        i = i + 1; k = k + 1
+    end while
+    
+    while j < length(R) do
+        A[k] = R[j]
+        j = j + 1; k = k + 1
+    end while
+end function</code></pre>
+    </div>
+
+    <h2>排序步驟與過程</h2>
+    <div id="steps">請按「開始排序」或「下一步」來觀看演示。</div>
+  </div>
+
+  <script>
+    const arrayDisplay = document.getElementById('arrayDisplay');
+    const steps = document.getElementById('steps');
+    const sizeInput = document.getElementById('sizeInput');
+    const generateButton = document.getElementById('generateButton');
+    const startButton = document.getElementById('startButton');
+    const stepButton = document.getElementById('stepButton');
+    const resetButton = document.getElementById('resetButton');
+
+    let items = [];
+    let originalItems = [];
+    
+    let sorted = false;
+    let running = false;
+    let stepMode = false;
+    let timeoutId = null;
+
+    // 用於記錄合併排序所有步驟的動畫佇列
+    let animations = [];
+    let animIndex = 0;
+
+    function getValidSize() {
+      let size = Number(sizeInput.value);
+      if (size < 5) size = 5;
+      if (size > 12) size = 12;
+      sizeInput.value = size;
+      return size;
+    }
+
+    function createRandomArray(size) {
+      const arr = [];
+      for (let k = 0; k < size; k++) {
+        arr.push(Math.floor(Math.random() * 90) + 10);
+      }
+      return arr;
+    }
+
+    function updateButtonStates() {
+      generateButton.disabled = running && !stepMode;
+      startButton.disabled = running || sorted;
+      stepButton.disabled = sorted;
+    }
+
+    // 新增 sortedRange 參數來標示完成局部合併的灰色區塊
+    function renderArray(activeElements = [], swappedElements = [], sortedRange = null) {
+      arrayDisplay.innerHTML = '';
+      items.forEach((value, index) => {
+        const bar = document.createElement('div');
+        bar.className = 'bar';
+        bar.dataset.value = value;
+        
+        if (sorted || (sortedRange && index >= sortedRange[0] && index <= sortedRange[1])) {
+          bar.classList.add('sorted');
+        }
+        
+        if (activeElements.includes(index)) {
+          bar.classList.add('active');
+        }
+        if (swappedElements.includes(index)) {
+          bar.classList.add('swapped');
+        }
+        
+        bar.style.height = `${value * 1.5}px`;
+        arrayDisplay.appendChild(bar);
+      });
+    }
+
+    function resetState() {
+      sorted = false;
+      running = false;
+      stepMode = false;
+      animations = [];
+      animIndex = 0;
+      
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+        timeoutId = null;
+      }
+      steps.textContent = '請按「開始排序」或「下一步」來觀看演示。';
+      updateButtonStates();
+      renderArray();
+    }
+
+    function logStep(message) {
+      steps.textContent += '\n' + message;
+      steps.scrollTop = steps.scrollHeight; 
+    }
+
+    // 預先計算並記錄合併排序的所有動畫影格
+    function generateAnimations(arr) {
+      let anims = [];
+      let tempArr = [...arr];
+
+      function merge(left, mid, right) {
+        anims.push({ type: 'info', msg: `\n=== 準備合併區間 [${left}~${mid}] 與 [${mid+1}~${right}] ===` });
+
+        let leftArr = tempArr.slice(left, mid + 1);
+        let rightArr = tempArr.slice(mid + 1, right + 1);
+        let i = 0, j = 0, k = left;
+
+        while (i < leftArr.length && j < rightArr.length) {
+          if (leftArr[i] <= rightArr[j]) {
+            anims.push({ 
+              type: 'overwrite', 
+              idx: k, 
+              val: leftArr[i], 
+              msg: `比較 左側(${leftArr[i]}) <= 右側(${rightArr[j]})，將 ${leftArr[i]} 寫入位置 [${k}]` 
+            });
+            tempArr[k] = leftArr[i];
+            i++;
+          } else {
+            anims.push({ 
+              type: 'overwrite', 
+              idx: k, 
+              val: rightArr[j], 
+              msg: `比較 左側(${leftArr[i]}) > 右側(${rightArr[j]})，將 ${rightArr[j]} 寫入位置 [${k}]` 
+            });
+            tempArr[k] = rightArr[j];
+            j++;
+          }
+          k++;
+        }
+
+        while (i < leftArr.length) {
+          anims.push({ 
+            type: 'overwrite', 
+            idx: k, 
+            val: leftArr[i], 
+            msg: `左側剩餘元素，將 ${leftArr[i]} 寫入位置 [${k}]` 
+          });
+          tempArr[k] = leftArr[i];
+          i++;
+          k++;
+        }
+
+        while (j < rightArr.length) {
+          anims.push({ 
+            type: 'overwrite', 
+            idx: k, 
+            val: rightArr[j], 
+            msg: `右側剩餘元素，將 ${rightArr[j]} 寫入位置 [${k}]` 
+          });
+          tempArr[k] = rightArr[j];
+          j++;
+          k++;
+        }
+
+        anims.push({ type: 'done_merge', left: left, right: right, msg: `✓ 區間 [${left}~${right}] 合併完成。` });
+      }
+
+      function sort(left, right) {
+        if (left >= right) return;
+        let mid = Math.floor((left + right) / 2);
+        anims.push({ type: 'info', msg: `[分割] 將區間 [${left}~${right}] 切割為 [${left}~${mid}] 與 [${mid+1}~${right}]` });
+        sort(left, mid);
+        sort(mid + 1, right);
+        merge(left, mid, right);
+      }
+
+      sort(0, arr.length - 1);
+      return anims;
+    }
+
+    function playNextAnimation() {
+      if (sorted) return;
+
+      if (animIndex >= animations.length) {
+        sorted = true;
+        running = false;
+        renderArray([], [], [0, items.length - 1]);
+        logStep('\n✨ 所有區間合併完成，陣列已完全排序！');
+        updateButtonStates();
+        return;
+      }
+
+      const anim = animations[animIndex];
+      animIndex++;
+
+      if (anim.type === 'info') {
+        logStep(anim.msg);
+        renderArray(); // 保持當前狀態
+        
+        // 資訊標籤不需停頓太久，加快播放節奏
+        if (!stepMode) {
+          timeoutId = setTimeout(playNextAnimation, 300);
+        }
+      } 
+      else if (anim.type === 'overwrite') {
+        items[anim.idx] = anim.val;
+        renderArray([anim.idx], []); // 高亮當前覆寫的位置
+        logStep(anim.msg);
+        
+        if (!stepMode) {
+          timeoutId = setTimeout(playNextAnimation, 600);
+        }
+      } 
+      else if (anim.type === 'done_merge') {
+        renderArray([], [], [anim.left, anim.right]); // 將完成合併的區間反灰
+        logStep(anim.msg);
+        
+        if (!stepMode) {
+          timeoutId = setTimeout(playNextAnimation, 700);
+        }
+      }
+
+      updateButtonStates();
+    }
+
+    function startSort() {
+      if (running || sorted) return;
+      if (animations.length === 0) {
+        animations = generateAnimations(items);
+      }
+      running = true;
+      stepMode = false;
+      if (animIndex === 0) steps.textContent = '排序開始。';
+      updateButtonStates();
+      playNextAnimation();
+    }
+
+    function nextStep() {
+      if (sorted) return;
+      
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+        timeoutId = null;
+      }
+      
+      if (animations.length === 0) {
+        animations = generateAnimations(items);
+      }
+      
+      running = true;
+      stepMode = true; 
+      
+      if (animIndex === 0) steps.textContent = '手動單步排序開始。';
+      
+      updateButtonStates();
+      playNextAnimation();
+    }
+
+    // 事件綁定
+    generateButton.addEventListener('click', () => {
+      items = createRandomArray(getValidSize());
+      originalItems = [...items];
+      resetState();
+    });
+
+    startButton.addEventListener('click', startSort);
+    stepButton.addEventListener('click', nextStep);
+    
+    resetButton.addEventListener('click', () => {
+      items = [...originalItems];
+      resetState();
+      logStep('已重設為初始未排序狀態。');
+    });
+
+    // 初始載入
+    items = createRandomArray(getValidSize());
+    originalItems = [...items];
+    renderArray();
+    updateButtonStates();
+  </script>
+</body>
+</html>
