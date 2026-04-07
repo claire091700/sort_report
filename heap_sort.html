@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>堆積排序示範</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f7fc;
+      color: #2c3e50;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 900px;
+      margin: 24px auto;
+      padding: 20px;
+      background: #ffffff;
+      border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(44, 62, 80, 0.08);
+    }
+    h1, h2, h3 {
+      margin-top: 0;
+    }
+    .controls {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+    .controls input[type="number"] {
+      width: 100px;
+      padding: 8px;
+      border: 1px solid #cfd8dc;
+      border-radius: 8px;
+    }
+    .controls button {
+      padding: 10px 16px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      background: #2e86de;
+      color: white;
+      transition: background 0.2s ease;
+    }
+    .controls button:hover:not(:disabled) {
+      background: #1f5dac;
+    }
+    .controls button:disabled {
+      background: #a4b0be;
+      cursor: not-allowed;
+    }
+    #arrayDisplay {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 18px;
+      min-height: 150px;
+      align-items: flex-end;
+    }
+    .bar {
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      width: 40px;
+      min-height: 40px;
+      border-radius: 8px;
+      background: #d6eaf8;
+      color: #1b4f72;
+      font-weight: 600;
+      position: relative;
+      transition: height 0.35s ease, background 0.25s ease, opacity 0.25s ease;
+    }
+    .bar.sorted {
+      opacity: 0.6;
+      background: #bdc3c7;
+    }
+    .bar.active {
+      animation: highlight 0.45s ease;
+      background: #ffca28;
+    }
+    .bar.swapped {
+      animation: swapPulse 0.45s ease;
+      background: #58d68d;
+    }
+    .bar::after {
+      content: attr(data-value);
+      position: absolute;
+      top: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 0.9rem;
+    }
+    @keyframes highlight {
+      0% { transform: translateY(0); }
+      25% { transform: translateY(-10px); }
+      100% { transform: translateY(0); }
+    }
+    @keyframes swapPulse {
+      0% { transform: translateY(0); }
+      30% { transform: translateY(-12px); }
+      60% { transform: translateY(0); }
+      100% { transform: translateY(0); }
+    }
+    #steps {
+      white-space: pre-wrap;
+      background: #f1f4f9;
+      padding: 16px;
+      border-radius: 10px;
+      border: 1px solid #dfe6ed;
+      height: 250px;
+      overflow-y: auto;
+      margin-bottom: 20px;
+      font-family: 'Courier New', Courier, monospace;
+      line-height: 1.5;
+    }
+    .info-box {
+      background: #fafafa;
+      padding: 16px;
+      border-radius: 10px;
+      border: 1px solid #e2e8f0;
+    }
+    .info-box strong {
+      color: #2c3e50;
+    }
+    pre.pseudocode {
+      background: #282c34;
+      color: #abb2bf;
+      padding: 16px;
+      border-radius: 8px;
+      overflow-x: auto;
+      font-family: 'Courier New', Courier, monospace;
+      line-height: 1.4;
+    }
+    .mb-20 {
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>堆積排序 Heap Sort</h1>
+    <p>這個示範說明堆積排序的「建構最大堆積」與「提取最大值」過程及時間複雜度。</p>
+
+    <div class="controls">
+      <label>
+        陣列長度 (5-12):
+        <input id="sizeInput" type="number" min="5" max="12" value="8" />
+      </label>
+      <button id="generateButton">重新產生陣列</button>
+      <button id="startButton">開始排序</button>
+      <button id="stepButton">下一步</button>
+      <button id="resetButton">重設為初始狀態</button>
+    </div>
+
+    <div id="arrayDisplay"></div>
+
+    <div class="info-box mb-20">
+      <h2>操作原理</h2>
+      <p>堆積排序（Heap Sort）利用了「二元樹」的概念，但實際上是直接在陣列上操作。分為兩個主要階段：</p>
+      <ol>
+        <li><strong>建構最大堆積 (Build Max Heap)</strong>：將陣列調整為「最大堆積」狀態（即每個父節點的值都大於或等於其子節點），此時陣列的第一個元素一定是最大值。</li>
+        <li><strong>排序與堆積化 (Extract & Heapify)</strong>：將目前的最大值（根節點，也就是陣列首位）與陣列未排序部分的最後一個元素交換，將其視為「已排序」。然後針對剩下的未排序元素重新進行「堆積化」，恢復最大堆積狀態。重複此動作直到全部排序完成。</li>
+      </ol>
+    </div>
+
+    <div class="info-box mb-20">
+      <h2>時間與空間複雜度</h2>
+      <ul>
+        <li><strong>時間複雜度（最佳、最壞與平均情況）</strong>: $O(n \log n)$ - 建構最大堆積需要 $O(n)$，後續 $n-1$ 次的提取與堆積化每次需要 $O(\log n)$。</li>
+        <li><strong>空間複雜度</strong>: $O(1)$ - 雖然概念上像樹狀結構，但所有交換與推移都在原陣列內完成，屬於原地排序演算法（In-place sorting）。</li>
+      </ul>
+    </div>
+
+    <div class="info-box mb-20">
+      <h2>演算法偽代碼 (Pseudocode)</h2>
+      <pre class="pseudocode"><code>function heapSort(A)
+    n = length(A)
+    
+    // 階段一：建構最大堆積
+    for i from floor(n/2) - 1 down to 0 do
+        heapify(A, n, i)
+    end for
+    
+    // 階段二：依序將最大值移至尾端，並縮小堆積範圍
+    for i from n - 1 down to 1 do
+        swap(A[0], A[i])
+        heapify(A, i, 0)
+    end for
+end function
+
+function heapify(A, n, i)
+    largest = i
+    left = 2 * i + 1
+    right = 2 * i + 2
+    
+    if left < n and A[left] > A[largest] then
+        largest = left
+    end if
+    
+    if right < n and A[right] > A[largest] then
+        largest = right
+    end if
+    
+    if largest != i then
+        swap(A[i], A[largest])
+        heapify(A, n, largest)
+    end if
+end function</code></pre>
+    </div>
+
+    <h2>排序步驟與過程</h2>
+    <div id="steps">請按「開始排序」或「下一步」來觀看演示。</div>
+  </div>
+
+  <script>
+    const arrayDisplay = document.getElementById('arrayDisplay');
+    const steps = document.getElementById('steps');
+    const sizeInput = document.getElementById('sizeInput');
+    const generateButton = document.getElementById('generateButton');
+    const startButton = document.getElementById('startButton');
+    const stepButton = document.getElementById('stepButton');
+    const resetButton = document.getElementById('resetButton');
+
+    let items = [];
+    let originalItems = [];
+    
+    let sorted = false;
+    let running = false;
+    let stepMode = false;
+    let timeoutId = null;
+
+    let animations = [];
+    let animIndex = 0;
+    let sortedBoundary = -1; // 記錄已經排序好（推到陣列後方）的邊界索引
+
+    function getValidSize() {
+      let size = Number(sizeInput.value);
+      if (size < 5) size = 5;
+      if (size > 12) size = 12;
+      sizeInput.value = size;
+      return size;
+    }
+
+    function createRandomArray(size) {
+      const arr = [];
+      for (let k = 0; k < size; k++) {
+        arr.push(Math.floor(Math.random() * 90) + 10);
+      }
+      return arr;
+    }
+
+    function updateButtonStates() {
+      generateButton.disabled = running && !stepMode;
+      startButton.disabled = running || sorted;
+      stepButton.disabled = sorted;
+    }
+
+    function renderArray(activeElements = [], swappedElements = []) {
+      arrayDisplay.innerHTML = '';
+      items.forEach((value, index) => {
+        const bar = document.createElement('div');
+        bar.className = 'bar';
+        bar.dataset.value = value;
+        
+        // 如果索引大於等於 sortedBoundary（從後往前排），代表已排序
+        if (sorted || (sortedBoundary !== -1 && index >= sortedBoundary)) {
+          bar.classList.add('sorted');
+        }
+        
+        if (activeElements.includes(index)) {
+          bar.classList.add('active');
+        }
+        if (swappedElements.includes(index)) {
+          bar.classList.add('swapped');
+        }
+        
+        bar.style.height = `${value * 1.5}px`;
+        arrayDisplay.appendChild(bar);
+      });
+    }
+
+    function resetState() {
+      sorted = false;
+      running = false;
+      stepMode = false;
+      animations = [];
+      animIndex = 0;
+      sortedBoundary = -1;
+      
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+        timeoutId = null;
+      }
+      steps.textContent = '請按「開始排序」或「下一步」來觀看演示。';
+      updateButtonStates();
+      renderArray();
+    }
+
+    function logStep(message) {
+      steps.textContent += '\n' + message;
+      steps.scrollTop = steps.scrollHeight; 
+    }
+
+    // 預先產生堆積排序的所有動畫步驟
+    function generateAnimations(arr) {
+      let anims = [];
+      let tempArr = [...arr];
+
+      function heapify(n, i, contextMsg) {
+        let largest = i;
+        let left = 2 * i + 1;
+        let right = 2 * i + 2;
+
+        if (left < n) {
+          anims.push({
+            type: 'compare',
+            indices: [largest, left],
+            msg: `[${contextMsg}] 比較節點 [${largest}](${tempArr[largest]}) 與左子節點 [${left}](${tempArr[left]})`
+          });
+          if (tempArr[left] > tempArr[largest]) {
+            largest = left;
+          }
+        }
+
+        if (right < n) {
+          anims.push({
+            type: 'compare',
+            indices: [largest, right],
+            msg: `[${contextMsg}] 比較目前最大節點 [${largest}](${tempArr[largest]}) 與右子節點 [${right}](${tempArr[right]})`
+          });
+          if (tempArr[right] > tempArr[largest]) {
+            largest = right;
+          }
+        }
+
+        if (largest !== i) {
+          anims.push({
+            type: 'swap',
+            indices: [i, largest],
+            msg: `[${contextMsg}] 發現較大子節點，交換 [${i}](${tempArr[i]}) 與 [${largest}](${tempArr[largest]}) 以維持最大堆積`
+          });
+          
+          let temp = tempArr[i];
+          tempArr[i] = tempArr[largest];
+          tempArr[largest] = temp;
+
+          // 遞迴向下整理
+          heapify(n, largest, contextMsg);
+        }
+      }
+
+      const n = tempArr.length;
+
+      // 階段一：建構最大堆積
+      anims.push({ type: 'info', msg: '=== 階段一：開始建構最大堆積 (Build Max Heap) ===' });
+      for (let i = Math.floor(n / 2) - 1; i >= 0; i--) {
+        heapify(n, i, '建構堆積');
+      }
+      anims.push({ type: 'info', msg: '✓ 最大堆積建構完成。陣列首位現在是最大值。' });
+
+      // 階段二：提取最大值並重新堆積化
+      anims.push({ type: 'info', msg: '\n=== 階段二：開始排序 (提取最大值並置於尾端) ===' });
+      for (let i = n - 1; i > 0; i--) {
+        anims.push({
+          type: 'extract',
+          indices: [0, i],
+          msg: `將目前最大值 [0](${tempArr[0]}) 與未排序區段最後一個元素 [${i}](${tempArr[i]}) 交換`
+        });
+        
+        let temp = tempArr[0];
+        tempArr[0] = tempArr[i];
+        tempArr[i] = temp;
+
+        anims.push({ type: 'mark_sorted', boundary: i, msg: `位置 [${i}] 已完成排序，鎖定。` });
+
+        // 重新對剩下的元素進行堆積化
+        heapify(i, 0, '整理剩餘堆積');
+      }
+      
+      anims.push({ type: 'mark_sorted', boundary: 0, msg: `位置 [0] 自然成為最小值，鎖定。` });
+      
+      return anims;
+    }
+
+    function playNextAnimation() {
+      if (sorted) return;
+
+      if (animIndex >= animations.length) {
+        sorted = true;
+        running = false;
+        renderArray();
+        logStep('\n✨ 堆積排序完成！');
+        updateButtonStates();
+        return;
+      }
+
+      const anim = animations[animIndex];
+      animIndex++;
+
+      if (anim.type === 'info') {
+        logStep(anim.msg);
+        renderArray();
+        if (!stepMode) timeoutId = setTimeout(playNextAnimation, 400);
+      } 
+      else if (anim.type === 'compare') {
+        renderArray(anim.indices, []);
+        logStep(anim.msg);
+        if (!stepMode) timeoutId = setTimeout(playNextAnimation, 600);
+      } 
+      else if (anim.type === 'swap') {
+        let i = anim.indices[0];
+        let j = anim.indices[1];
+        let temp = items[i];
+        items[i] = items[j];
+        items[j] = temp;
+        
+        renderArray([], anim.indices);
+        logStep(anim.msg);
+        if (!stepMode) timeoutId = setTimeout(playNextAnimation, 600);
+      }
+      else if (anim.type === 'extract') {
+        let i = anim.indices[0];
+        let j = anim.indices[1];
+        let temp = items[i];
+        items[i] = items[j];
+        items[j] = temp;
+        
+        // 提取時用綠色標示交換
+        renderArray([], anim.indices);
+        logStep(anim.msg);
+        if (!stepMode) timeoutId = setTimeout(playNextAnimation, 600);
+      }
+      else if (anim.type === 'mark_sorted') {
+        sortedBoundary = anim.boundary;
+        renderArray();
+        logStep(anim.msg);
+        if (!stepMode) timeoutId = setTimeout(playNextAnimation, 400);
+      }
+
+      updateButtonStates();
+    }
+
+    function startSort() {
+      if (running || sorted) return;
+      if (animations.length === 0) {
+        animations = generateAnimations(items);
+      }
+      running = true;
+      stepMode = false;
+      if (animIndex === 0) steps.textContent = '排序開始。';
+      updateButtonStates();
+      playNextAnimation();
+    }
+
+    function nextStep() {
+      if (sorted) return;
+      
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+        timeoutId = null;
+      }
+      
+      if (animations.length === 0) {
+        animations = generateAnimations(items);
+      }
+      
+      running = true;
+      stepMode = true; 
+      
+      if (animIndex === 0) steps.textContent = '手動單步排序開始。';
+      
+      updateButtonStates();
+      playNextAnimation();
+    }
+
+    // 事件綁定
+    generateButton.addEventListener('click', () => {
+      items = createRandomArray(getValidSize());
+      originalItems = [...items];
+      resetState();
+    });
+
+    startButton.addEventListener('click', startSort);
+    stepButton.addEventListener('click', nextStep);
+    
+    resetButton.addEventListener('click', () => {
+      items = [...originalItems];
+      resetState();
+      logStep('已重設為初始未排序狀態。');
+    });
+
+    // 初始載入
+    items = createRandomArray(getValidSize());
+    originalItems = [...items];
+    renderArray();
+    updateButtonStates();
+  </script>
+</body>
+</html>
